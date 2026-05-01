@@ -44,4 +44,4 @@
 
 ---
 
-Built with ❤️ by **Antigravity AI** for an elegant music listening experience.
+Built with ❤️ by **Antigravity** for an elegant music listening experience.
