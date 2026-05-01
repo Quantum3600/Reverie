@@ -2,11 +2,8 @@
 
 **Reverie** is a minimalist, premium music-synced lyrics screensaver for Windows. It transforms your desktop into an ethereal audio-visual experience, blending real-time audio reactivity with perfectly timed lyrics.
 
-![Reverie Banner](https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop)
-
 ## ✨ Features
 
-- **Reactive Particle Orb**: A signature 3D visualizer that deforms and "waves" in real-time to your system's audio.
 - **Synced Lyrics**: Automatic fetching and pixel-perfect synchronization of lyrics using [LRCLIB](https://lrclib.net/).
 - **Windows Media Integration**: Seamlessly detects music from Spotify, Apple Music, YouTube, and more via the Global System Media Transport Controls (GSMTC).
 - **Premium Aesthetics**: High-performance 60fps rendering, smooth easing animations, and a curated neon-to-blue color palette.
