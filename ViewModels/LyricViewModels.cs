@@ -26,6 +26,7 @@ public class LyricLineViewModel : ViewModelBase
     private LineState _state = LineState.Upcoming;
     public TimeSpan StartTime { get; set; }
     public string Text { get; set; } = "";
+    public bool IsInstrumental { get; set; }
 
     public LineState State
     {

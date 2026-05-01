@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Media.Animation;
+using System.Threading.Tasks;
 using Reverie.Services;
 using Reverie.ViewModels;
 
@@ -63,6 +64,7 @@ public partial class MainWindow : Window
     private bool _lastFetchSuccessful = true;
     private bool _isUpdating = false;
     private bool _isNetworkAvailable = true;
+    private Random _glowRandom = new Random();
 
     public MainWindow()
     {
@@ -83,6 +85,8 @@ public partial class MainWindow : Window
 
         // Force an immediate update
         Timer_Tick(null, EventArgs.Empty);
+
+        StartGlowAnimation();
     }
 
     private async void Timer_Tick(object? sender, EventArgs e)
@@ -129,30 +133,76 @@ public partial class MainWindow : Window
                         bitmap.Freeze();
                         AlbumArtImage.Source = bitmap;
                         AlbumArtImage.Visibility = Visibility.Visible;
+
+                        var dominantColor = GetDominantColor(bitmap);
+                        dominantColor.A = 0x33;
+                        ColorAnimation colorAnim = new ColorAnimation
+                        {
+                            To = dominantColor,
+                            Duration = TimeSpan.FromSeconds(2),
+                            EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+                        };
+                        GlowColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, colorAnim);
                     }
                     catch
                     {
                         AlbumArtImage.Source = null;
                         AlbumArtImage.Visibility = Visibility.Collapsed;
+                        SetDefaultGlowColor();
                     }
                 }
                 else
                 {
                     AlbumArtImage.Source = null;
                     AlbumArtImage.Visibility = Visibility.Collapsed;
+                    SetDefaultGlowColor();
                 }
                 
                 if (!string.IsNullOrWhiteSpace(_currentTrackTitle) && _currentTrackTitle != "No Track")
                 {
                     _isFetchingLyrics = true;
-                    var result = await _lyricsService.GetLyricsAsync(_currentTrackTitle, _currentArtist);
-                    _isFetchingLyrics = false;
-                    _lastFetchSuccessful = result.IsSuccessful;
-                    
-                    foreach (var line in result.Lines)
-                    {
-                        _lyricLines.Add(new LyricLineViewModel { StartTime = line.StartTime, Text = line.Text });
-                    }
+                    // Fire and forget the fetch task to avoid blocking the UI thread
+                    _ = Task.Run(async () => {
+                        try 
+                        {
+                            var result = await _lyricsService.GetLyricsAsync(_currentTrackTitle, _currentArtist);
+                            
+                            // Marshall back to UI thread to update collection
+                            await Dispatcher.InvokeAsync(() => {
+                                if (_currentTrackTitle == trackInfo.Title) // Ensure we are still on the same track
+                                {
+                                    _lastFetchSuccessful = result.IsSuccessful;
+                                    _lyricLines.Clear();
+                                    
+                                    // Only add if we have synced lyrics (more than 1 line)
+                                    if (result.Lines.Count > 1)
+                                    {
+                                        foreach (var line in result.Lines)
+                                        {
+                                            _lyricLines.Add(new LyricLineViewModel 
+                                            { 
+                                                StartTime = line.StartTime, 
+                                                Text = line.Text,
+                                                IsInstrumental = line.IsInstrumental
+                                            });
+                                        }
+                                    }
+                                    else 
+                                    {
+                                        _lastFetchSuccessful = false; // Treat unsynced/empty as failure for fallback
+                                    }
+                                }
+                                _isFetchingLyrics = false;
+                            });
+                        }
+                        catch 
+                        {
+                            await Dispatcher.InvokeAsync(() => {
+                                _lastFetchSuccessful = false;
+                                _isFetchingLyrics = false;
+                            });
+                        }
+                    });
                 }
             }
 
@@ -173,7 +223,7 @@ public partial class MainWindow : Window
                 }
 
                 // Add a small offset (e.g., 400ms) to make lyrics appear slightly earlier
-                var position = actualPosition.Add(TimeSpan.FromMilliseconds(500));
+                var position = actualPosition.Add(TimeSpan.FromMilliseconds(800));
                 
                 int newActiveLineIndex = -1;
                 for (int i = 0; i < _lyricLines.Count; i++)
@@ -239,29 +289,29 @@ public partial class MainWindow : Window
             // Update Visibility States
             bool hasLyrics = _lyricLines.Count > 0;
             bool showLyrics = hasLyrics && _currentActiveLineIndex != -1;
-            bool showLoading = false;
-
-            if (rawPosition != null && !string.IsNullOrWhiteSpace(_currentTrackTitle) && _currentTrackTitle != "No Track")
-            {
-                if (_isFetchingLyrics)
-                {
-                    showLoading = true;
-                }
-            }
+            bool showLoading = _isFetchingLyrics;
 
             LyricsScrollViewer.Visibility = showLyrics ? Visibility.Visible : Visibility.Collapsed;
             NoTextIndicator.Visibility = showLoading ? Visibility.Visible : Visibility.Collapsed;
             
             // Show orb ONLY if:
             // 1. Not currently fetching
-            // 2. We don't have lyrics (either fetch failed or no lyrics found)
-            // 3. We ARE in the middle of a track (not an intro where we have lyrics waiting)
-            // 4. OR if we are offline
-            IdleOrb.Visibility = (!_isNetworkAvailable || (!hasLyrics && !showLoading && (!_lastFetchSuccessful || _lyricLines.Count == 0))) 
-                                ? Visibility.Visible : Visibility.Collapsed;
+            // 2. We don't have lyrics
+            // 3. OR if we are offline
+            bool shouldShowOrb = !_isNetworkAvailable || (!hasLyrics && !showLoading);
             
-            // If we have lyrics but are in the intro, show the scroll viewer (it will show upcoming blurred lyrics)
-            // Only show if network is available, otherwise the orb takes priority
+            if (shouldShowOrb)
+            {
+                if (IdleOrb.Visibility != Visibility.Visible)
+                    IdleOrb.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                if (IdleOrb.Visibility != Visibility.Collapsed)
+                    IdleOrb.Visibility = Visibility.Collapsed;
+            }
+            
+            // If we have lyrics but are in the intro, show the scroll viewer
             if (_isNetworkAvailable && hasLyrics && _currentActiveLineIndex == -1 && !showLoading)
             {
                 LyricsScrollViewer.Visibility = Visibility.Visible;
@@ -299,5 +349,65 @@ public partial class MainWindow : Window
     {
         // Exit on any key press
         Application.Current.Shutdown();
+    }
+
+    private void SetDefaultGlowColor()
+    {
+        var defaultColor = System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x00, 0x55);
+        ColorAnimation defaultAnim = new ColorAnimation
+        {
+            To = defaultColor,
+            Duration = TimeSpan.FromSeconds(2),
+            EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
+        };
+        GlowColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, defaultAnim);
+    }
+
+    private System.Windows.Media.Color GetDominantColor(System.Windows.Media.Imaging.BitmapSource bitmap)
+    {
+        try
+        {
+            if (bitmap.PixelWidth == 0 || bitmap.PixelHeight == 0) return System.Windows.Media.Color.FromRgb(255, 0, 85);
+            var resized = new System.Windows.Media.Imaging.TransformedBitmap(bitmap, new System.Windows.Media.ScaleTransform(1.0 / bitmap.PixelWidth, 1.0 / bitmap.PixelHeight));
+            var formatConverted = new System.Windows.Media.Imaging.FormatConvertedBitmap(resized, System.Windows.Media.PixelFormats.Bgra32, null, 0);
+            byte[] pixels = new byte[4];
+            formatConverted.CopyPixels(pixels, 4, 0);
+            return System.Windows.Media.Color.FromRgb(pixels[2], pixels[1], pixels[0]);
+        }
+        catch
+        {
+            return System.Windows.Media.Color.FromRgb(255, 0, 85);
+        }
+    }
+
+    private void StartGlowAnimation()
+    {
+        // Screen usually 1920x1080. The element is 3000x3000 at margin -1500,-1500. 
+        // X = 0 puts its center at 0,0.
+        // We want it to drift freely around the screen. Center can be anywhere from 0 to 1920 in X, 0 to 1080 in Y.
+        double targetX = _glowRandom.Next(0, 1920);
+        double targetY = _glowRandom.Next(0, 1080);
+
+        // Deform the blob to make shape dynamic
+        double scaleX = 0.7 + (_glowRandom.NextDouble() * 1.5); // 0.7 to 2.2
+        double scaleY = 0.7 + (_glowRandom.NextDouble() * 1.5); // 0.7 to 2.2
+
+        // Duration for this morph/move
+        double durationSeconds = 15 + (_glowRandom.NextDouble() * 20); // 15 to 35 seconds
+
+        var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
+
+        var animX = new DoubleAnimation { To = targetX, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
+        var animY = new DoubleAnimation { To = targetY, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
+        var animScaleX = new DoubleAnimation { To = scaleX, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
+        var animScaleY = new DoubleAnimation { To = scaleY, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
+
+        // When complete, loop by picking new targets
+        animX.Completed += (s, e) => StartGlowAnimation();
+
+        GlowTransform.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, animX);
+        GlowTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, animY);
+        GlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, animScaleX);
+        GlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, animScaleY);
     }
 }

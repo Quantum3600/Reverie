@@ -12,16 +12,26 @@
         Icon="reverie_logo.ico"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewMouseMove="Window_PreviewMouseMove">
+
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
     
     <Grid>
         <!-- Background Glow -->
-        <Ellipse Width="1000" Height="1000" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-200,-200,0,0">
+        <Ellipse x:Name="BackgroundGlow" Width="3000" Height="3000" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-1500,-1500,0,0" IsHitTestVisible="False">
             <Ellipse.Fill>
                 <RadialGradientBrush>
-                    <GradientStop Color="#33FF0055" Offset="0"/>
+                    <GradientStop x:Name="GlowColorStop" Color="#33FF0055" Offset="0"/>
                     <GradientStop Color="Transparent" Offset="1"/>
                 </RadialGradientBrush>
             </Ellipse.Fill>
+            <Ellipse.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="GlowScale" ScaleX="1" ScaleY="1" CenterX="1500" CenterY="1500"/>
+                    <TranslateTransform x:Name="GlowTransform" X="0" Y="0"/>
+                </TransformGroup>
+            </Ellipse.RenderTransform>
         </Ellipse>
 
         <!-- Content Grid -->
@@ -42,21 +52,25 @@
                             <RectangleGeometry Rect="0,0,80,80" RadiusX="8" RadiusY="8"/>
                         </Image.Clip>
                     </Image>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock Name="TrackText" FontSize="28" Foreground="White" TextWrapping="Wrap"/>
-                        <TextBlock Name="ArtistText" FontSize="18" Foreground="#FFCCCCCC" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                    <StackPanel VerticalAlignment="Center" Width="450">
+                        <controls:MarqueeControl x:Name="TrackText" FontSize="28" Foreground="White" FontWeight="Bold" Height="40" HorizontalAlignment="Stretch"/>
+                        <controls:MarqueeControl x:Name="ArtistText" FontSize="18" Foreground="#FFCCCCCC" Margin="0,5,0,0" Height="30" HorizontalAlignment="Stretch"/>
                     </StackPanel>
                 </StackPanel>
             </StackPanel>
 
             <!-- Right Side: Lyrics Area -->
             <Grid Grid.Column="1">
-                <TextBlock Name="NoTextIndicator" Text="..." FontSize="70" Foreground="#FF666666" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                <TextBlock Name="NoTextIndicator" Text="..." FontSize="70" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed">
+                    <TextBlock.Effect>
+                        <DropShadowEffect Color="White" BlurRadius="30" ShadowDepth="0" Opacity="0.8"/>
+                    </TextBlock.Effect>
                     <TextBlock.Triggers>
                         <EventTrigger RoutedEvent="Loaded">
                             <BeginStoryboard>
                                 <Storyboard RepeatBehavior="Forever" AutoReverse="True">
-                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.2" To="1.0" Duration="0:0:1" />
+                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.3" To="1.0" Duration="0:0:1" />
+                                    <DoubleAnimation Storyboard.TargetProperty="(TextBlock.Effect).(DropShadowEffect.BlurRadius)" From="10" To="40" Duration="0:0:1" />
                                 </Storyboard>
                             </BeginStoryboard>
                         </EventTrigger>
@@ -73,53 +87,79 @@
                                     <ContentControl.Template>
                                         <ControlTemplate TargetType="ContentControl">
                                             <Grid Margin="25,0,25,0" local:VsmBehavior.State="{Binding State}">
-                                                <VisualStateManager.VisualStateGroups>
-                                                    <VisualStateGroup x:Name="LineStates">
-                                                        <VisualState x:Name="Upcoming">
-                                                            <Storyboard>
-                                                                <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0.3" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainTextGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
-                                                            </Storyboard>
-                                                        </VisualState>
-                                                        <VisualState x:Name="Played">
-                                                            <Storyboard>
-                                                                <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="0.2" Duration="0:0:0.8"/>
-                                                                <ColorAnimation Storyboard.TargetName="MainTextBrush" Storyboard.TargetProperty="Color" To="#FF444444" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainTextGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
-                                                            </Storyboard>
-                                                        </VisualState>
-                                                        <VisualState x:Name="Previous">
-                                                            <Storyboard>
-                                                                <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.8"/>
-                                                                <ColorAnimation Storyboard.TargetName="MainTextBrush" Storyboard.TargetProperty="Color" To="#FFAAAAAA" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainTextGlow" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
-                                                            </Storyboard>
-                                                        </VisualState>
-                                                        <VisualState x:Name="Current">
-                                                            <Storyboard>
-                                                                <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.8"/>
-                                                                <ColorAnimation Storyboard.TargetName="MainTextBrush" Storyboard.TargetProperty="Color" To="White" Duration="0:0:0.8"/>
-                                                                <DoubleAnimation Storyboard.TargetName="MainTextGlow" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.8"/>
-                                                            </Storyboard>
-                                                        </VisualState>
-                                                    </VisualStateGroup>
-                                                </VisualStateManager.VisualStateGroups>
-                                                <TextBlock Name="UpcomingText" Text="{Binding Text}" FontSize="46" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="#FF555555" Opacity="0.3">
-                                                    <TextBlock.Effect><BlurEffect Radius="6" /></TextBlock.Effect>
-                                                </TextBlock>
-                                                <TextBlock Name="MainText" Text="{Binding Text}" FontSize="46" FontWeight="SemiBold" TextWrapping="Wrap" Opacity="0">
-                                                    <TextBlock.Foreground>
-                                                        <SolidColorBrush x:Name="MainTextBrush" Color="#FF444444" />
-                                                    </TextBlock.Foreground>
-                                                    <TextBlock.Effect>
-                                                        <DropShadowEffect x:Name="MainTextGlow" Color="White" BlurRadius="25" ShadowDepth="0" Opacity="0" />
-                                                    </TextBlock.Effect>
-                                                </TextBlock>
-                                            </Grid>
+                                                  <VisualStateManager.VisualStateGroups>
+                                                     <VisualStateGroup x:Name="LineStates">
+                                                         <VisualState x:Name="Upcoming">
+                                                             <Storyboard>
+                                                                 <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0.3" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="(TextBlock.Effect).(DropShadowEffect.Opacity)" To="0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="InstrumentalText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
+                                                             </Storyboard>
+                                                         </VisualState>
+                                                         <VisualState x:Name="Played">
+                                                             <Storyboard>
+                                                                 <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="0.2" Duration="0:0:0.8"/>
+                                                                 <ColorAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="#FF444444" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="(TextBlock.Effect).(DropShadowEffect.Opacity)" To="0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="InstrumentalText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
+                                                             </Storyboard>
+                                                         </VisualState>
+                                                         <VisualState x:Name="Previous">
+                                                             <Storyboard>
+                                                                 <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.8"/>
+                                                                 <ColorAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="#FFAAAAAA" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="(TextBlock.Effect).(DropShadowEffect.Opacity)" To="0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="InstrumentalText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
+                                                             </Storyboard>
+                                                         </VisualState>
+                                                         <VisualState x:Name="Current">
+                                                             <Storyboard>
+                                                                 <DoubleAnimation Storyboard.TargetName="UpcomingText" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.8"/>
+                                                                 <ColorAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="(TextBlock.Foreground).(SolidColorBrush.Color)" To="White" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="MainText" Storyboard.TargetProperty="(TextBlock.Effect).(DropShadowEffect.Opacity)" To="1.0" Duration="0:0:0.8"/>
+                                                                 <DoubleAnimation Storyboard.TargetName="InstrumentalText" Storyboard.TargetProperty="Opacity" To="1.0" Duration="0:0:0.8"/>
+                                                             </Storyboard>
+                                                         </VisualState>
+                                                     </VisualStateGroup>
+                                                 </VisualStateManager.VisualStateGroups>
+
+                                                 <!-- Regular Lyrics -->
+                                                 <Grid x:Name="RegularLyricGrid" Visibility="Collapsed">
+                                                     <TextBlock Name="UpcomingText" Text="{Binding Text}" FontSize="46" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="#FF555555" Opacity="0.3">
+                                                         <TextBlock.Effect><BlurEffect Radius="6" /></TextBlock.Effect>
+                                                     </TextBlock>
+                                                     
+                                                     <TextBlock Name="MainText" Text="{Binding Text}" FontSize="46" FontWeight="SemiBold" TextWrapping="Wrap" Opacity="0">
+                                                         <TextBlock.Foreground>
+                                                             <SolidColorBrush Color="#FF444444" />
+                                                         </TextBlock.Foreground>
+                                                         <TextBlock.Effect>
+                                                             <DropShadowEffect Color="White" BlurRadius="25" ShadowDepth="0" Opacity="0" />
+                                                         </TextBlock.Effect>
+                                                     </TextBlock>
+                                                 </Grid>
+
+                                                 <!-- Instrumental Marker -->
+                                                 <TextBlock Name="InstrumentalText" Text="{Binding Text}" FontSize="60" Foreground="White" HorizontalAlignment="Center" Opacity="0" Visibility="Collapsed">
+                                                     <TextBlock.Effect>
+                                                         <DropShadowEffect Color="White" BlurRadius="30" ShadowDepth="0"/>
+                                                     </TextBlock.Effect>
+                                                 </TextBlock>
+                                             </Grid>
+                                             <ControlTemplate.Triggers>
+                                                 <DataTrigger Binding="{Binding IsInstrumental}" Value="True">
+                                                     <Setter TargetName="RegularLyricGrid" Property="Visibility" Value="Collapsed"/>
+                                                     <Setter TargetName="InstrumentalText" Property="Visibility" Value="Visible"/>
+                                                 </DataTrigger>
+                                                 <DataTrigger Binding="{Binding IsInstrumental}" Value="False">
+                                                     <Setter TargetName="RegularLyricGrid" Property="Visibility" Value="Visible"/>
+                                                     <Setter TargetName="InstrumentalText" Property="Visibility" Value="Collapsed"/>
+                                                 </DataTrigger>
+                                             </ControlTemplate.Triggers>
                                         </ControlTemplate>
                                     </ContentControl.Template>
                                 </ContentControl>

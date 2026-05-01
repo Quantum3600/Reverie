@@ -82,6 +82,39 @@ public class LyricsService
                 
                 if (!string.IsNullOrWhiteSpace(text))
                 {
+                    // Check for significant gap before this line
+                    if (lines.Count > 0)
+                    {
+                        var lastLine = lines.Last();
+                        var gap = time - lastLine.StartTime;
+                        
+                        // Estimate duration of the previous line based on word count
+                        // Assuming average 0.5s per word + 1s base
+                        double estimatedDuration = lastLine.Text.Split(' ').Length * 0.5 + 1.0;
+                        if (estimatedDuration > 8) estimatedDuration = 8; // Cap it
+
+                        // If there's a gap of more than 8 seconds AND more than the estimated duration
+                        if (gap.TotalSeconds > 10 && gap.TotalSeconds > (estimatedDuration + 4))
+                        {
+                            lines.Add(new LyricLine 
+                            { 
+                                StartTime = lastLine.StartTime.Add(TimeSpan.FromSeconds(estimatedDuration)), 
+                                Text = "♪ ♪ ♪",
+                                IsInstrumental = true
+                            });
+                        }
+                    }
+                    else if (time.TotalSeconds > 6)
+                    {
+                        // If the first line starts after 6 seconds, insert an intro marker
+                        lines.Add(new LyricLine 
+                        { 
+                            StartTime = TimeSpan.FromSeconds(2), 
+                            Text = "♪ ♪ ♪",
+                            IsInstrumental = true
+                        });
+                    }
+
                     lines.Add(new LyricLine { 
                         StartTime = time, 
                         Text = text
