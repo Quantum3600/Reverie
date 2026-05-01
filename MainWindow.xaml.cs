@@ -60,6 +60,9 @@ public partial class MainWindow : Window
     private TimeSpan _lastValidPosition = TimeSpan.Zero;
     private AudioSpectrumService _spectrumService;
     private bool _isFetchingLyrics = false;
+    private bool _lastFetchSuccessful = true;
+    private bool _isUpdating = false;
+    private bool _isNetworkAvailable = true;
 
     public MainWindow()
     {
@@ -84,9 +87,17 @@ public partial class MainWindow : Window
 
     private async void Timer_Tick(object? sender, EventArgs e)
     {
-        // Update Time
-        ClockText.Text = DateTime.Now.ToString("HH:mm");
-        DateText.Text = DateTime.Now.ToString("dddd, MMMM d");
+        if (_isUpdating) return;
+        _isUpdating = true;
+
+        try 
+        {
+            // Update Time
+            ClockText.Text = DateTime.Now.ToString("HH:mm");
+            DateText.Text = DateTime.Now.ToString("dddd, MMMM d");
+
+            // Check Network
+            _isNetworkAvailable = System.Net.NetworkInformation.NetworkInterface.GetIsNetworkAvailable();
 
         // Update Media Info (Requires Windows 10/11)
         try 
@@ -107,32 +118,38 @@ public partial class MainWindow : Window
                 {
                     try
                     {
-                        using var stream = await trackInfo.Thumbnail.OpenReadAsync();
                         var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                        bitmap.BeginInit();
-                        bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                        bitmap.StreamSource = stream.AsStream();
-                        bitmap.EndInit();
+                        using (var stream = await trackInfo.Thumbnail.OpenReadAsync())
+                        {
+                            bitmap.BeginInit();
+                            bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                            bitmap.StreamSource = stream.AsStream();
+                            bitmap.EndInit();
+                        }
+                        bitmap.Freeze();
                         AlbumArtImage.Source = bitmap;
                         AlbumArtImage.Visibility = Visibility.Visible;
                     }
                     catch
                     {
+                        AlbumArtImage.Source = null;
                         AlbumArtImage.Visibility = Visibility.Collapsed;
                     }
                 }
                 else
                 {
+                    AlbumArtImage.Source = null;
                     AlbumArtImage.Visibility = Visibility.Collapsed;
                 }
                 
                 if (!string.IsNullOrWhiteSpace(_currentTrackTitle) && _currentTrackTitle != "No Track")
                 {
                     _isFetchingLyrics = true;
-                    var lines = await _lyricsService.GetLyricsAsync(_currentTrackTitle, _currentArtist);
+                    var result = await _lyricsService.GetLyricsAsync(_currentTrackTitle, _currentArtist);
                     _isFetchingLyrics = false;
+                    _lastFetchSuccessful = result.IsSuccessful;
                     
-                    foreach (var line in lines)
+                    foreach (var line in result.Lines)
                     {
                         _lyricLines.Add(new LyricLineViewModel { StartTime = line.StartTime, Text = line.Text });
                     }
@@ -220,7 +237,8 @@ public partial class MainWindow : Window
             }
 
             // Update Visibility States
-            bool showLyrics = _lyricLines.Count > 0 && _currentActiveLineIndex != -1;
+            bool hasLyrics = _lyricLines.Count > 0;
+            bool showLyrics = hasLyrics && _currentActiveLineIndex != -1;
             bool showLoading = false;
 
             if (rawPosition != null && !string.IsNullOrWhiteSpace(_currentTrackTitle) && _currentTrackTitle != "No Track")
@@ -233,7 +251,21 @@ public partial class MainWindow : Window
 
             LyricsScrollViewer.Visibility = showLyrics ? Visibility.Visible : Visibility.Collapsed;
             NoTextIndicator.Visibility = showLoading ? Visibility.Visible : Visibility.Collapsed;
-            IdleOrb.Visibility = (!showLyrics && !showLoading) ? Visibility.Visible : Visibility.Collapsed;
+            
+            // Show orb ONLY if:
+            // 1. Not currently fetching
+            // 2. We don't have lyrics (either fetch failed or no lyrics found)
+            // 3. We ARE in the middle of a track (not an intro where we have lyrics waiting)
+            // 4. OR if we are offline
+            IdleOrb.Visibility = (!_isNetworkAvailable || (!hasLyrics && !showLoading && (!_lastFetchSuccessful || _lyricLines.Count == 0))) 
+                                ? Visibility.Visible : Visibility.Collapsed;
+            
+            // If we have lyrics but are in the intro, show the scroll viewer (it will show upcoming blurred lyrics)
+            // Only show if network is available, otherwise the orb takes priority
+            if (_isNetworkAvailable && hasLyrics && _currentActiveLineIndex == -1 && !showLoading)
+            {
+                LyricsScrollViewer.Visibility = Visibility.Visible;
+            }
         }
         catch 
         {
@@ -250,6 +282,11 @@ public partial class MainWindow : Window
             ArtistText.Text = "";
         }
     }
+    finally
+    {
+        _isUpdating = false;
+    }
+}
 
     private DateTime _startTime = DateTime.Now;
 

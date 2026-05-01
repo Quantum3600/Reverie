@@ -27,7 +27,7 @@ public partial class ParticleOrbControl : UserControl
     private double _angleY = 0;
     private bool _isAnimating = false;
     private const int ParticleCount = 800;
-    private const double SphereRadius = 250;
+    private const double SphereRadius = 180;
 
     public ParticleOrbControl()
     {

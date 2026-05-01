@@ -9,6 +9,7 @@
         Topmost="True" 
         Cursor="None"
         Background="Black"
+        Icon="Assets/icon.png"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewMouseMove="Window_PreviewMouseMove">
     

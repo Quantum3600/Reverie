@@ -12,11 +12,11 @@ public class LyricsService
 {
     private static readonly HttpClient client = new HttpClient();
 
-    public async Task<List<LyricLine>> GetLyricsAsync(string title, string artist)
+    public async Task<LyricsResult> GetLyricsAsync(string title, string artist)
     {
-        var lines = new List<LyricLine>();
+        var result = new LyricsResult();
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(artist))
-            return lines;
+            return result;
 
         // Strip Apple Music's album suffix from artist name
         if (artist.Contains(" — "))
@@ -37,24 +37,31 @@ public class LyricsService
                 var lrcText = lyricsProp.GetString();
                 if (!string.IsNullOrWhiteSpace(lrcText))
                 {
-                    lines = ParseLrc(lrcText);
+                    result.Lines = ParseLrc(lrcText);
+                    result.IsSuccessful = true;
                 }
             }
             else if (doc.RootElement.TryGetProperty("plainLyrics", out var plainProp) && plainProp.ValueKind == System.Text.Json.JsonValueKind.String)
             {
                 // Fallback if no synced lyrics
-                lines.Add(new LyricLine { 
+                result.Lines.Add(new LyricLine { 
                     StartTime = TimeSpan.Zero, 
                     Text = plainProp.GetString() ?? "Lyrics not synced." 
                 });
+                result.IsSuccessful = true;
+            }
+            else 
+            {
+                // API returned but no lyrics found in the response body properties we care about
+                result.IsSuccessful = true; // Still technically successful API call but no lyrics
             }
         }
         catch
         {
-            // Fail silently to allow UI to show visualizer fallback
+            result.IsSuccessful = false;
         }
 
-        return lines;
+        return result;
     }
 
     private List<LyricLine> ParseLrc(string lrcText)
