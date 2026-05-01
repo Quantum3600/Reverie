@@ -1,4 +1,8 @@
-# 🌌 Reverie
+<p align="center">
+  <img src="Assets/icon.png" width="150" alt="Optimite Logo" />
+</p>
+
+<h1 align="center">🌌 Reverie</h1>
 
 **Reverie** is a minimalist screensaver designed for Windows. It provides a clean desktop experience by displaying a clock and seamlessly fetching and displaying synchronized lyrics for the currently playing track. If lyrics are not found, it gracefully falls back to a subtle audio visualizer.
 
