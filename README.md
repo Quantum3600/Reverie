@@ -1,4 +1,15 @@
-# 🌌 Reverie
+<p align="center">
+  <img src="Assets/icon.png" width="250" alt="Optimite Logo" />
+</p>
+
+<h1 align="center">Reverie</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/.NET-5C2D91?style=flat-square&logo=.net&logoColor=white" alt=".NET">
+  <img src="https://img.shields.io/badge/C%23-239120?style=flat-square&logo=c-sharp&logoColor=white" alt="C#">
+  <img src="https://img.shields.io/badge/Windows-0078D6?style=flat-square&logo=windows&logoColor=white" alt="Windows">
+  <img src="https://img.shields.io/badge/Built_by-Antigravity-ff69b4?style=flat-square" alt="Antigravity">
+</p>
 
 **Reverie** is a minimalist screensaver designed for Windows. It provides a clean desktop experience by displaying a clock and seamlessly fetching and displaying synchronized lyrics for the currently playing track. If lyrics are not found, it gracefully falls back to a subtle audio visualizer.
 
