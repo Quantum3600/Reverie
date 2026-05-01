@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Built_by-Antigravity-ff69b4?style=flat-square" alt="Antigravity">
 </p>
 
-**Reverie** is a minimalist screensaver designed for Windows. It provides a clean desktop experience by displaying a clock and seamlessly fetching and displaying synchronized lyrics for the current[...]
+**Reverie** is a minimalist screensaver designed for Windows. It provides a clean desktop experience by displaying a clock and seamlessly fetching and displaying synchronized lyrics for the currently playing track. If lyrics are not found, it gracefully falls back to a subtle audio visualizer.
 
 ## ✨ Features
 
