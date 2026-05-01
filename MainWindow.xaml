@@ -9,7 +9,7 @@
         Topmost="True" 
         Cursor="None"
         Background="Black"
-        Icon="Assets/icon.png"
+        Icon="reverie_logo.ico"
         PreviewKeyDown="Window_PreviewKeyDown"
         PreviewMouseMove="Window_PreviewMouseMove">
     

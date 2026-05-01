@@ -7,12 +7,13 @@
     <UseWPF>true</UseWPF>
     <PublishSingleFile>true</PublishSingleFile>
     <Version>1.1</Version>
+    <ApplicationIcon>reverie_logo.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="System.Text.Json" Version="10.0.7" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="Assets\icon.png" />
+    <Resource Include="reverie_logo.ico" />
   </ItemGroup>
 </Project>
