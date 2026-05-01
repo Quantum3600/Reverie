@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Assets/icon.png" width="150" alt="Optimite Logo" />
+  <img src="Assets/icon.png" width="250" alt="Optimite Logo" />
 </p>
 
 <h1 align="center">🌌 Reverie</h1>
