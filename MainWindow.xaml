@@ -18,21 +18,65 @@
     </Window.Resources>
     
     <Grid>
-        <!-- Background Glow -->
-        <Ellipse x:Name="BackgroundGlow" Width="3000" Height="3000" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-1500,-1500,0,0" IsHitTestVisible="False">
-            <Ellipse.Fill>
-                <RadialGradientBrush>
-                    <GradientStop x:Name="GlowColorStop" Color="#33FF0055" Offset="0"/>
-                    <GradientStop Color="Transparent" Offset="1"/>
-                </RadialGradientBrush>
-            </Ellipse.Fill>
-            <Ellipse.RenderTransform>
-                <TransformGroup>
-                    <ScaleTransform x:Name="GlowScale" ScaleX="1" ScaleY="1" CenterX="1500" CenterY="1500"/>
-                    <TranslateTransform x:Name="GlowTransform" X="0" Y="0"/>
-                </TransformGroup>
-            </Ellipse.RenderTransform>
-        </Ellipse>
+        <!-- Background Liquid Glows -->
+        <Canvas x:Name="BackgroundCanvas" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsHitTestVisible="False">
+            <Canvas.Effect>
+                <BlurEffect Radius="150" RenderingBias="Performance"/>
+            </Canvas.Effect>
+            <!-- Blob 1 -->
+            <Path x:Name="Glow1" Data="M 500,100 C 800,50 950,300 900,500 C 850,700 650,950 400,900 C 150,850 50,650 100,400 C 150,150 200,150 500,100 Z" Width="1000" Height="1000" Stretch="Fill" Margin="-500,-500,0,0">
+                <Path.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop x:Name="Glow1ColorStop" Color="#77FF0055" Offset="0"/>
+                        <GradientStop x:Name="Glow1MidStop" Color="#22FF0055" Offset="0.5"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </RadialGradientBrush>
+                </Path.Fill>
+                <Path.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="Glow1Scale" ScaleX="1" ScaleY="1" CenterX="500" CenterY="500"/>
+                        <RotateTransform x:Name="Glow1Rotate" Angle="0" CenterX="500" CenterY="500"/>
+                        <TranslateTransform x:Name="Glow1Transform" X="0" Y="0"/>
+                    </TransformGroup>
+                </Path.RenderTransform>
+            </Path>
+
+            <!-- Blob 2 -->
+            <Path x:Name="Glow2" Data="M 400,150 C 700,100 850,250 800,600 C 750,900 500,850 300,800 C 100,750 0,550 50,300 C 100,50 200,200 400,150 Z" Width="1000" Height="1000" Stretch="Fill" Margin="-500,-500,0,0">
+                <Path.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop x:Name="Glow2ColorStop" Color="#55FF0055" Offset="0"/>
+                        <GradientStop x:Name="Glow2MidStop" Color="#11FF0055" Offset="0.5"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </RadialGradientBrush>
+                </Path.Fill>
+                <Path.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="Glow2Scale" ScaleX="1" ScaleY="1" CenterX="500" CenterY="500"/>
+                        <RotateTransform x:Name="Glow2Rotate" Angle="0" CenterX="500" CenterY="500"/>
+                        <TranslateTransform x:Name="Glow2Transform" X="0" Y="0"/>
+                    </TransformGroup>
+                </Path.RenderTransform>
+            </Path>
+
+            <!-- Blob 3 -->
+            <Path x:Name="Glow3" Data="M 600,200 C 900,150 850,450 700,700 C 550,950 350,900 200,800 C 50,700 100,400 150,200 C 200,0 400,250 600,200 Z" Width="1000" Height="1000" Stretch="Fill" Margin="-500,-500,0,0">
+                <Path.Fill>
+                    <RadialGradientBrush>
+                        <GradientStop x:Name="Glow3ColorStop" Color="#33FF0055" Offset="0"/>
+                        <GradientStop x:Name="Glow3MidStop" Color="#08FF0055" Offset="0.5"/>
+                        <GradientStop Color="Transparent" Offset="1"/>
+                    </RadialGradientBrush>
+                </Path.Fill>
+                <Path.RenderTransform>
+                    <TransformGroup>
+                        <ScaleTransform x:Name="Glow3Scale" ScaleX="1" ScaleY="1" CenterX="500" CenterY="500"/>
+                        <RotateTransform x:Name="Glow3Rotate" Angle="0" CenterX="500" CenterY="500"/>
+                        <TranslateTransform x:Name="Glow3Transform" X="0" Y="0"/>
+                    </TransformGroup>
+                </Path.RenderTransform>
+            </Path>
+        </Canvas>
 
         <!-- Content Grid -->
         <Grid Margin="80">
@@ -52,10 +96,14 @@
                             <RectangleGeometry Rect="0,0,80,80" RadiusX="8" RadiusY="8"/>
                         </Image.Clip>
                     </Image>
-                    <StackPanel VerticalAlignment="Center" Width="450">
-                        <controls:MarqueeControl x:Name="TrackText" FontSize="28" Foreground="White" FontWeight="Bold" Height="40" HorizontalAlignment="Stretch"/>
-                        <controls:MarqueeControl x:Name="ArtistText" FontSize="18" Foreground="#FFCCCCCC" Margin="0,5,0,0" Height="30" HorizontalAlignment="Stretch"/>
-                    </StackPanel>
+                    <Grid VerticalAlignment="Center" Width="450">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <controls:MarqueeControl x:Name="TrackText" Grid.Row="0" MaxWidth="450" FontSize="28" Foreground="White" FontWeight="Bold" Height="40" HorizontalAlignment="Stretch"/>
+                        <controls:MarqueeControl x:Name="ArtistText" Grid.Row="1" MaxWidth="450" FontSize="18" Foreground="#FFCCCCCC" Margin="0,5,0,0" Height="30" HorizontalAlignment="Stretch"/>
+                    </Grid>
                 </StackPanel>
             </StackPanel>
 

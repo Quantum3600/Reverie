@@ -2,10 +2,21 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Height="Auto" Width="Auto">
-    <Grid Name="MainGrid" ClipToBounds="True" Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Height}">
-        <Canvas Name="MainCanvas" Width="{Binding ElementName=MainGrid, Path=ActualWidth}" Height="{Binding ElementName=MainGrid, Path=ActualHeight}">
+    <Grid Name="MainGrid" 
+          ClipToBounds="True">
+        <Canvas Name="MainCanvas">
             <TextBlock Name="MarqueeText" 
                        Canvas.Top="0"
+                       Canvas.Left="0"
+                       Text="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Text}"
+                       FontSize="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontSize}"
+                       Foreground="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Foreground}"
+                       FontWeight="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontWeight}"
+                       TextWrapping="NoWrap"/>
+            <TextBlock Name="MarqueeText2" 
+                       Canvas.Top="0"
+                       Canvas.Left="0"
+                       Visibility="Collapsed"
                        Text="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Text}"
                        FontSize="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=FontSize}"
                        Foreground="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Foreground}"

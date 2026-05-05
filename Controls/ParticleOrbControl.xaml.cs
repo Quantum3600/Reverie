@@ -18,16 +18,23 @@ public partial class ParticleOrbControl : UserControl
         public double YRel { get; set; }
         public double BaseRadius { get; set; }
         public int BandIndex { get; set; }
+        public bool IsPrimarySpike { get; set; }
     }
 
     private AudioSpectrumService? _spectrumService;
     private List<Particle> _particles = new();
+    private Color _accentColor = Color.FromRgb(150, 220, 255);
+
+    public void SetAccentColor(Color color)
+    {
+        _accentColor = color;
+    }
     private float[] _smoothedBands = new float[64];
     private double _angleX = 0;
     private double _angleY = 0;
     private bool _isAnimating = false;
     private const int ParticleCount = 800;
-    private const double SphereRadius = 180;
+    private const double SphereRadius = 100; // Base core radius
 
     public ParticleOrbControl()
     {
@@ -50,21 +57,20 @@ public partial class ParticleOrbControl : UserControl
             double radiusAtY = Math.Sqrt(1 - yRel * yRel);
             double theta = goldenAngle * i;
 
-            // Map particles to frequency bands (0-63)
-            // We'll use a distribution where most particles are in the mid-bands
-            int bandIndex = (int)(Math.Abs(yRel) * 63);
+            // Distribute frequency bands with a skew towards the mid-range (clustering around index 32)
+            double rawNormalized = (double)((i * 37) % 64) / 63.0;
+            double skewed = 0.5 + Math.Sign(rawNormalized - 0.5) * Math.Pow(Math.Abs(rawNormalized - 0.5) * 2.0, 1.5) / 2.0;
+            int bandIndex = (int)(skewed * 63);
+            
+            // Apply inversion to keep the requested direction
+            //bandIndex = 63 - bandIndex;
 
             var ellipse = new Ellipse
             {
                 Width = 2,
                 Height = 2,
-                Fill = new SolidColorBrush(Color.FromArgb(255, 150, 220, 255)),
-                Effect = new System.Windows.Media.Effects.DropShadowEffect
-                {
-                    Color = Color.FromArgb(255, 100, 180, 255),
-                    BlurRadius = 10,
-                    ShadowDepth = 0
-                }
+                Fill = new SolidColorBrush(_accentColor)
+                // Removed heavy DropShadowEffect for massive FPS boost
             };
 
             OrbCanvas.Children.Add(ellipse);
@@ -75,7 +81,8 @@ public partial class ParticleOrbControl : UserControl
                 Theta = theta,
                 YRel = yRel,
                 BaseRadius = 2,
-                BandIndex = bandIndex
+                BandIndex = bandIndex,
+                IsPrimarySpike = (i % 4 == 0) // Only 1 in 7 particles reacts fully to spikes
             });
         }
     }
@@ -107,13 +114,22 @@ public partial class ParticleOrbControl : UserControl
 
         float[] spectrum = _spectrumService?.Spectrum ?? new float[64];
         
-        // Smooth the bands for the orb
         for (int i = 0; i < 64; i++)
         {
-            if (spectrum[i] > _smoothedBands[i])
-                _smoothedBands[i] = spectrum[i];
+            // Boost higher frequencies so they can break the orb shape
+            float freqBoost = 1.0f + (i / 16.0f); 
+            float rawTarget = spectrum[i] * 2.0f * freqBoost;
+            
+            // Soft power curve isolates spikes gently
+            float target = (float)Math.Pow(rawTarget, 1.5);
+            
+            // Frequency amplitude cap to keep the spikes within screen bounds
+            target = Math.Min(target, 1.5f);
+
+            if (target > _smoothedBands[i])
+                _smoothedBands[i] += (target - _smoothedBands[i]) * 0.5f; // Responsive attack
             else
-                _smoothedBands[i] *= 0.92f;
+                _smoothedBands[i] *= 0.7f; // Slightly longer decay so spikes are visible
         }
 
         double cosY = Math.Cos(_angleY);
@@ -128,10 +144,12 @@ public partial class ParticleOrbControl : UserControl
         {
             // Audio displacement (WAVE EFFECT)
             float bandVal = _smoothedBands[p.BandIndex];
-            double displacement = bandVal * 150; // Max displacement
             
-            // Pulse effect based on overall energy
-            double pulse = _smoothedBands.Average() * 50;
+            // All particles now react fully to their assigned frequency bands
+            double displacement = bandVal * 80; 
+            
+            // Soft breathing effect for the whole orb
+            double pulse = _smoothedBands.Average() * 10;
             
             double currentRadius = SphereRadius + displacement + pulse;
             double radiusAtY = Math.Sqrt(1 - p.YRel * p.YRel);
@@ -150,6 +168,7 @@ public partial class ParticleOrbControl : UserControl
 
             // Perspective scale
             double scale = (SphereRadius * 1.5 + z2) / (SphereRadius * 3) * 1.5 + 0.5;
+            scale = Math.Max(0.01, scale);
             
             Panel.SetZIndex(p.Shape, (int)z2);
 
@@ -162,14 +181,19 @@ public partial class ParticleOrbControl : UserControl
             double opacity = (z2 + SphereRadius * 1.5) / (SphereRadius * 3);
             p.Shape.Opacity = Math.Clamp(opacity, 0.15, 1.0);
             
-            // Color shift based on intensity
+            // Color shift based on intensity using the accent color
             if (bandVal > 0.5)
             {
-                ((SolidColorBrush)p.Shape.Fill).Color = Color.FromRgb(200, 230, 255);
+                // Brighter variant of accent color for peaks
+                ((SolidColorBrush)p.Shape.Fill).Color = Color.FromArgb(
+                    255, 
+                    (byte)Math.Min(255, _accentColor.R * 1.5), 
+                    (byte)Math.Min(255, _accentColor.G * 1.5), 
+                    (byte)Math.Min(255, _accentColor.B * 1.5));
             }
             else
             {
-                ((SolidColorBrush)p.Shape.Fill).Color = Color.FromRgb(150, 200, 255);
+                ((SolidColorBrush)p.Shape.Fill).Color = _accentColor;
             }
         }
     }

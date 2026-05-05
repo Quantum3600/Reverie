@@ -107,11 +107,10 @@ public partial class MainWindow : Window
         try 
         {
             var trackInfo = await _mediaService.GetCurrentTrackAsync();
-            TrackText.Text = trackInfo.Title;
-            ArtistText.Text = trackInfo.Artist;
-
             if (trackInfo.Title != _currentTrackTitle || trackInfo.Artist != _currentArtist)
             {
+                TrackText.Text = trackInfo.Title;
+                ArtistText.Text = trackInfo.Artist;
                 _currentTrackTitle = trackInfo.Title;
                 _currentArtist = trackInfo.Artist;
                 _lyricLines.Clear();
@@ -135,14 +134,30 @@ public partial class MainWindow : Window
                         AlbumArtImage.Visibility = Visibility.Visible;
 
                         var dominantColor = GetDominantColor(bitmap);
-                        dominantColor.A = 0x33;
-                        ColorAnimation colorAnim = new ColorAnimation
-                        {
-                            To = dominantColor,
-                            Duration = TimeSpan.FromSeconds(2),
-                            EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
-                        };
-                        GlowColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, colorAnim);
+                        IdleOrb.SetAccentColor(dominantColor);
+                        
+                        // Glow 1: Base color
+                        var color1 = dominantColor; color1.A = 0x77;
+                        var mid1 = dominantColor; mid1.A = 0x22;
+                        
+                        // Glow 2: Slightly lighter/shifted
+                        var color2 = System.Windows.Media.Color.FromArgb(0x55, (byte)Math.Min(255, dominantColor.R * 1.2), (byte)Math.Min(255, dominantColor.G * 1.2), (byte)Math.Min(255, dominantColor.B * 1.2));
+                        var mid2 = color2; mid2.A = 0x11;
+                        
+                        // Glow 3: Slightly darker
+                        var color3 = System.Windows.Media.Color.FromArgb(0x33, (byte)(dominantColor.R * 0.8), (byte)(dominantColor.G * 0.8), (byte)(dominantColor.B * 0.8));
+                        var mid3 = color3; mid3.A = 0x08;
+
+                        var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
+                        
+                        Glow1ColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = color1, Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+                        Glow1MidStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = mid1, Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+
+                        Glow2ColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = color2, Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+                        Glow2MidStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = mid2, Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+
+                        Glow3ColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = color3, Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+                        Glow3MidStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = mid3, Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
                     }
                     catch
                     {
@@ -353,14 +368,16 @@ public partial class MainWindow : Window
 
     private void SetDefaultGlowColor()
     {
-        var defaultColor = System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x00, 0x55);
-        ColorAnimation defaultAnim = new ColorAnimation
-        {
-            To = defaultColor,
-            Duration = TimeSpan.FromSeconds(2),
-            EasingFunction = new QuarticEase { EasingMode = EasingMode.EaseOut }
-        };
-        GlowColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, defaultAnim);
+        var ease = new QuarticEase { EasingMode = EasingMode.EaseOut };
+        
+        Glow1ColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = System.Windows.Media.Color.FromArgb(0x77, 0xFF, 0x00, 0x55), Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+        Glow1MidStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = System.Windows.Media.Color.FromArgb(0x22, 0xFF, 0x00, 0x55), Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+
+        Glow2ColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = System.Windows.Media.Color.FromArgb(0x55, 0xFF, 0x33, 0x77), Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+        Glow2MidStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = System.Windows.Media.Color.FromArgb(0x11, 0xFF, 0x33, 0x77), Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+
+        Glow3ColorStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = System.Windows.Media.Color.FromArgb(0x33, 0xCC, 0x00, 0x44), Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
+        Glow3MidStop.BeginAnimation(System.Windows.Media.GradientStop.ColorProperty, new ColorAnimation { To = System.Windows.Media.Color.FromArgb(0x08, 0xCC, 0x00, 0x44), Duration = TimeSpan.FromSeconds(2), EasingFunction = ease });
     }
 
     private System.Windows.Media.Color GetDominantColor(System.Windows.Media.Imaging.BitmapSource bitmap)
@@ -368,11 +385,65 @@ public partial class MainWindow : Window
         try
         {
             if (bitmap.PixelWidth == 0 || bitmap.PixelHeight == 0) return System.Windows.Media.Color.FromRgb(255, 0, 85);
-            var resized = new System.Windows.Media.Imaging.TransformedBitmap(bitmap, new System.Windows.Media.ScaleTransform(1.0 / bitmap.PixelWidth, 1.0 / bitmap.PixelHeight));
-            var formatConverted = new System.Windows.Media.Imaging.FormatConvertedBitmap(resized, System.Windows.Media.PixelFormats.Bgra32, null, 0);
-            byte[] pixels = new byte[4];
-            formatConverted.CopyPixels(pixels, 4, 0);
-            return System.Windows.Media.Color.FromRgb(pixels[2], pixels[1], pixels[0]);
+
+            // Scale down to 32x32 to read pixels quickly and force proper averaging
+            var renderTarget = new System.Windows.Media.Imaging.RenderTargetBitmap(32, 32, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            var drawingVisual = new System.Windows.Media.DrawingVisual();
+            using (var drawingContext = drawingVisual.RenderOpen())
+            {
+                drawingContext.DrawImage(bitmap, new Rect(0, 0, 32, 32));
+            }
+            renderTarget.Render(drawingVisual);
+
+            byte[] pixels = new byte[32 * 32 * 4];
+            renderTarget.CopyPixels(pixels, 32 * 4, 0);
+
+            long r = 0, g = 0, b = 0;
+            long count = 0;
+
+            // To find an "accent" color, we weight pixels by their saturation
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                byte pb = pixels[i];
+                byte pg = pixels[i + 1];
+                byte pr = pixels[i + 2];
+                // pixels[i+3] is Alpha, but we assume opaque for album art
+
+                // Simple saturation estimation: difference between max and min channel
+                int max = Math.Max(pr, Math.Max(pg, pb));
+                int min = Math.Min(pr, Math.Min(pg, pb));
+                int sat = max - min;
+
+                // Ignore very dark, very bright, or grayscale pixels
+                if (max < 30 || min > 225 || sat < 20) continue;
+
+                // Weight by saturation to strongly favor vibrant colors
+                int weight = sat;
+                r += pr * weight;
+                g += pg * weight;
+                b += pb * weight;
+                count += weight;
+            }
+
+            if (count > 0)
+            {
+                return System.Windows.Media.Color.FromRgb((byte)(r / count), (byte)(g / count), (byte)(b / count));
+            }
+
+            // Fallback: simple average if no vibrant pixels found
+            r = g = b = count = 0;
+            for (int i = 0; i < pixels.Length; i += 4)
+            {
+                r += pixels[i + 2];
+                g += pixels[i + 1];
+                b += pixels[i];
+                count++;
+            }
+            
+            if (count > 0)
+                return System.Windows.Media.Color.FromRgb((byte)(r / count), (byte)(g / count), (byte)(b / count));
+
+            return System.Windows.Media.Color.FromRgb(255, 0, 85);
         }
         catch
         {
@@ -382,32 +453,38 @@ public partial class MainWindow : Window
 
     private void StartGlowAnimation()
     {
-        // Screen usually 1920x1080. The element is 3000x3000 at margin -1500,-1500. 
-        // X = 0 puts its center at 0,0.
-        // We want it to drift freely around the screen. Center can be anywhere from 0 to 1920 in X, 0 to 1080 in Y.
-        double targetX = _glowRandom.Next(0, 1920);
-        double targetY = _glowRandom.Next(0, 1080);
+        AnimateBlob(Glow1Transform, Glow1Scale, Glow1Rotate);
+        AnimateBlob(Glow2Transform, Glow2Scale, Glow2Rotate);
+        AnimateBlob(Glow3Transform, Glow3Scale, Glow3Rotate);
+    }
 
-        // Deform the blob to make shape dynamic
-        double scaleX = 0.7 + (_glowRandom.NextDouble() * 1.5); // 0.7 to 2.2
-        double scaleY = 0.7 + (_glowRandom.NextDouble() * 1.5); // 0.7 to 2.2
-
-        // Duration for this morph/move
-        double durationSeconds = 15 + (_glowRandom.NextDouble() * 20); // 15 to 35 seconds
-
+    private void AnimateBlob(System.Windows.Media.TranslateTransform translate, System.Windows.Media.ScaleTransform scale, System.Windows.Media.RotateTransform rotate)
+    {
+        double targetX = _glowRandom.Next(-200, 1920);
+        double targetY = _glowRandom.Next(-200, 1080);
+        
+        // Asymmetrical scaling creates the morphing effect
+        double scaleX = 0.8 + (_glowRandom.NextDouble() * 1.5);
+        double scaleY = 0.8 + (_glowRandom.NextDouble() * 1.5);
+        
+        // Continuous rotation over the duration adds to the liquid look
+        double targetAngle = rotate.Angle + _glowRandom.Next(90, 270);
+        
+        double durationSeconds = 15 + (_glowRandom.NextDouble() * 20);
         var ease = new SineEase { EasingMode = EasingMode.EaseInOut };
 
         var animX = new DoubleAnimation { To = targetX, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
         var animY = new DoubleAnimation { To = targetY, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
         var animScaleX = new DoubleAnimation { To = scaleX, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
         var animScaleY = new DoubleAnimation { To = scaleY, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
+        var animRotate = new DoubleAnimation { To = targetAngle, Duration = TimeSpan.FromSeconds(durationSeconds), EasingFunction = ease };
 
-        // When complete, loop by picking new targets
-        animX.Completed += (s, e) => StartGlowAnimation();
+        animX.Completed += (s, e) => AnimateBlob(translate, scale, rotate);
 
-        GlowTransform.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, animX);
-        GlowTransform.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, animY);
-        GlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, animScaleX);
-        GlowScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, animScaleY);
+        translate.BeginAnimation(System.Windows.Media.TranslateTransform.XProperty, animX);
+        translate.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, animY);
+        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, animScaleX);
+        scale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, animScaleY);
+        rotate.BeginAnimation(System.Windows.Media.RotateTransform.AngleProperty, animRotate);
     }
 }
